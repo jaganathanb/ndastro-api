@@ -1,0 +1,25 @@
+{
+  "editor.rulers": [88, 150],
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "ruff.nativeServer": "on",
+  "ruff.organizeImports": false,
+  "python.globalModuleInstallation": true,
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.analysis.languageServerMode": "full",
+  "debugpy.showPythonInlineValues": true,
+  "python.analysis.typeCheckingMode": "standard",
+
+  "python.testing.pytestArgs": [
+    "ndastro_api/tests"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "github.copilot.nextEditSuggestions.enabled": true
+}
