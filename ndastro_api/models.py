@@ -218,3 +218,13 @@ class NewPassword(SQLModel):
 
     token: str
     new_password: str = Field(min_length=8, max_length=40)
+
+
+class UserSetting(SQLModel, table=True):
+    """Model for storing user-specific settings as key-value pairs."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: str = Field(index=True, max_length=32)
+    section: str = Field(max_length=64)
+    key: str = Field(max_length=64)
+    value: str = Field(max_length=255)

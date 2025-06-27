@@ -3,7 +3,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import func, select
 
-from ndastro_api import crud
 from ndastro_api.api.deps import (
     CurrentUser,
     SessionDep,
@@ -23,6 +22,7 @@ from ndastro_api.models import (
     UserUpdate,
     UserUpdateMe,
 )
+from ndastro_api.services import users
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -48,14 +48,14 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> UsersPub
 )
 def create_user(*, session: SessionDep, user_in: UserCreate) -> UserPublic:
     """Create new user."""
-    user = crud.get_user_by_email(session=session, email=user_in.email)
+    user = users.get_user_by_email(session=session, email=user_in.email)
     if user:
         raise HTTPException(
             status_code=400,
             detail="The user with this email already exists in the system.",
         )
 
-    user = crud.create_user(session=session, user_create=user_in)
+    user = users.create_user(session=session, user_create=user_in)
     if settings.emails_enabled and user_in.email:
         email_data = generate_new_account_email(
             email_to=user_in.email,
@@ -79,7 +79,7 @@ def update_user_me(
 ) -> UserPublic:
     """Update own user."""
     if user_in.email:
-        existing_user = crud.get_user_by_email(session=session, email=user_in.email)
+        existing_user = users.get_user_by_email(session=session, email=user_in.email)
         if existing_user and existing_user.id != current_user.id:
             raise HTTPException(
                 status_code=409,
@@ -137,14 +137,14 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Message:
 @router.post("/signup")
 def register_user(session: SessionDep, user_in: UserRegister) -> UserPublic:
     """Create new user without the need to be logged in."""
-    user = crud.get_user_by_email(session=session, email=user_in.email)
+    user = users.get_user_by_email(session=session, email=user_in.email)
     if user:
         raise HTTPException(
             status_code=400,
             detail="The user with this email already exists in the system",
         )
     user_create = UserCreate.model_validate(user_in)
-    user = crud.create_user(session=session, user_create=user_create)
+    user = users.create_user(session=session, user_create=user_create)
     return UserPublic.model_validate(user)
 
 
@@ -184,14 +184,14 @@ def update_user(
             detail="The user with this id does not exist in the system",
         )
     if user_in.email:
-        existing_user = crud.get_user_by_email(session=session, email=user_in.email)
+        existing_user = users.get_user_by_email(session=session, email=user_in.email)
         if existing_user and existing_user.id != user_id:
             raise HTTPException(
                 status_code=409,
                 detail="User with this email already exists",
             )
 
-    db_user = crud.update_user(session=session, db_user=db_user, user_in=user_in)
+    db_user = users.update_user(session=session, db_user=db_user, user_in=user_in)
     return UserPublic.model_validate(db_user)
 
 

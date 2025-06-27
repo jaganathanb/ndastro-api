@@ -6,9 +6,9 @@ the database with initial data, such as creating the first superuser.
 
 from sqlmodel import Session, create_engine, select
 
-from ndastro_api import crud
 from ndastro_api.core.config import settings
 from ndastro_api.models import User, UserCreate
+from ndastro_api.services import users
 
 engine = create_engine(str(settings.sqlalchemy_database_uri))
 
@@ -39,4 +39,4 @@ def init_db(session: Session) -> None:
             password=settings.FIRST_SUPERUSER_PASSWORD,
             is_superuser=True,
         )
-        user = crud.create_user(session=session, user_create=user_in)
+        user = users.create_user(session=session, user_create=user_in)

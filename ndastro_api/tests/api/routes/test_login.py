@@ -6,9 +6,9 @@ from sqlmodel import Session
 
 from ndastro_api.core.config import settings
 from ndastro_api.core.security import verify_password
-from ndastro_api.crud import create_user
 from ndastro_api.email_helper import generate_password_reset_token
 from ndastro_api.models import UserCreate
+from ndastro_api.services.users import create_user
 from ndastro_api.tests.utils.user import user_authentication_headers
 from ndastro_api.tests.utils.utils import random_email, random_lower_string
 

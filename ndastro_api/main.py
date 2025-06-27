@@ -27,7 +27,8 @@ def custom_generate_unique_id(route: APIRoute) -> str:
         A unique string identifier for the route.
 
     """
-    return f"{route.tags[0]}-{route.name}"
+    tag = route.tags[0] if route.tags else "default"
+    return f"{tag}-{route.name}"
 
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":

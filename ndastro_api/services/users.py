@@ -8,7 +8,7 @@ from __future__ import annotations
 from sqlmodel import Session, select
 
 from ndastro_api.core.security import get_password_hash, verify_password
-from ndastro_api.models import User, UserCreate, UserUpdate
+from ndastro_api.models import User, UserCreate, UserSetting, UserUpdate
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -111,3 +111,39 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     if not verify_password(password, db_user.hashed_password):
         return None
     return db_user
+
+
+def get_user_settings(*, session: Session, user_id: str) -> list[UserSetting]:
+    """Retrieve all settings for a user."""
+    statement = select(UserSetting).where(UserSetting.user_id == user_id)
+    return list(session.exec(statement))
+
+
+def get_user_setting(*, session: Session, user_id: str, section: str, key: str) -> UserSetting | None:
+    """Retrieve a specific user setting by section and key."""
+    statement = select(UserSetting).where((UserSetting.user_id == user_id) & (UserSetting.section == section) & (UserSetting.key == key))
+    return session.exec(statement).first()
+
+
+def set_user_setting(*, session: Session, user_id: str, section: str, key: str, value: str) -> UserSetting:
+    """Set or create a user setting (upsert)."""
+    setting = get_user_setting(session=session, user_id=user_id, section=section, key=key)
+    if setting:
+        setting.value = value
+    else:
+        setting = UserSetting(user_id=user_id, section=section, key=key, value=value)
+        session.add(setting)
+    session.commit()
+    session.refresh(setting)
+    return setting
+
+
+def update_user_setting(*, session: Session, user_id: str, section: str, key: str, value: str) -> UserSetting | None:
+    """Update an existing user setting. Returns None if not found."""
+    setting = get_user_setting(session=session, user_id=user_id, section=section, key=key)
+    if not setting:
+        return None
+    setting.value = value
+    session.commit()
+    session.refresh(setting)
+    return setting
