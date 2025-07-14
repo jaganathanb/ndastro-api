@@ -8,7 +8,7 @@ from typing import Annotated, cast
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ndastro_api.api.deps import get_current_superuser
+from ndastro_api.api.deps import get_current_superuser, get_current_user
 from ndastro_api.api.v1.users import crud_tiers
 from ndastro_api.core.db.database import async_get_db
 from ndastro_api.core.exceptions.http_exceptions import (
@@ -53,7 +53,7 @@ async def write_tier(
     return cast("TierRead", tier_read)
 
 
-@router.get("/tiers", response_model=PaginatedListResponse[TierRead])
+@router.get("/tiers", dependencies=[Depends(get_current_user)], response_model=PaginatedListResponse[TierRead])
 async def read_tiers(
     db: Annotated[AsyncSession, Depends(async_get_db)],
     page: int = 1,
@@ -66,7 +66,7 @@ async def read_tiers(
     return response
 
 
-@router.get("/tier/{name}")
+@router.get("/tier/{name}", dependencies=[Depends(get_current_user)])
 async def read_tier(
     name: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],

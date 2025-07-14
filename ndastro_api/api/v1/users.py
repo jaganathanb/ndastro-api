@@ -35,10 +35,10 @@ from ndastro_api.schemas.user import (
 )
 from ndastro_api.services.utils import compute_offset, paginated_response
 
-router = APIRouter(tags=["Users"])
+router = APIRouter(tags=["Users"], dependencies=[Depends(get_current_user)])
 
 
-@router.post("/user", response_model=UserRead, status_code=201)
+@router.post("/user", dependencies=[Depends(get_current_superuser)], response_model=UserRead, status_code=201)
 async def write_user(user: UserCreate, db: Annotated[AsyncSession, Depends(async_get_db)]) -> UserRead:
     """Create a new user in the database after validating uniqueness of email and username.
 
@@ -192,7 +192,7 @@ async def patch_user(
     return {"message": "User updated"}
 
 
-@router.delete("/user/{username}")
+@router.delete("/user/{username}", dependencies=[Depends(get_current_superuser)])
 async def erase_user(
     username: str,
     current_user: Annotated[dict, Depends(get_current_user)],
