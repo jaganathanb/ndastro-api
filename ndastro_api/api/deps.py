@@ -1,111 +1,113 @@
-"""Dependency utilities for authentication, authorization, and database access in the ndastro_api.
+"""Dependency utilities for FastAPI endpoints in ndastro_api.
 
-This module provides FastAPI dependencies for database sessions, user authentication, and authorization checks.
+This module provides dependency functions for authentication, user retrieval and
+superuser checks for API requests.
 """
 
-from collections.abc import Generator
-from typing import Annotated
+from __future__ import annotations
 
-import jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jwt.exceptions import InvalidTokenError
-from pydantic import ValidationError
-from sqlmodel import Session
+import http
+from typing import Annotated, cast
 
-from ndastro_api.core import security
-from ndastro_api.core.config import settings
-from ndastro_api.core.db import engine
-from ndastro_api.models import TokenPayload, User
+from fastapi import Depends, HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002 # Required to be imported NOT as type check because openapi needs it
 
-reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/login/access-token",
+from ndastro_api.core.db.database import async_get_db
+from ndastro_api.core.exceptions.http_exceptions import (
+    ForbiddenException,
+    UnauthorizedException,
 )
+from ndastro_api.core.logger import logging
+from ndastro_api.core.security import TokenType, oauth2_scheme, verify_token
+from ndastro_api.crud.users import crud_users
+from ndastro_api.schemas.user import UserSchema  # noqa: TC001 # Required to be imported NOT as type check because openapi needs it
+
+logger = logging.getLogger(__name__)
 
 
-def get_db() -> Generator[Session, None, None]:
-    """Dependency that provides a SQLModel database session.
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[AsyncSession, Depends(async_get_db)]) -> UserSchema | None:
+    """Retrieve the current authenticated user based on the provided OAuth2 token.
 
-    Yields
-    ------
-    Session
-        An active database session to be used in a dependency context.
+    Args:
+        token (str): The OAuth2 access token extracted from the request.
+        db (AsyncSession): The asynchronous database session dependency.
 
-    """
-    with Session(engine) as session:
-        yield session
+    Returns:
+        dict[str, Any] | None: The user data as a dictionary if authentication is successful.
 
-
-SessionDep = Annotated[Session, Depends(get_db)]
-TokenDep = Annotated[str, Depends(reusable_oauth2)]
-
-
-def get_current_user(session: SessionDep, token: TokenDep) -> User:
-    """Retrieve the current user based on the provided JWT token and database session.
-
-    Parameters
-    ----------
-    session : SessionDep
-        The database session dependency.
-    token : TokenDep
-        The JWT token dependency.
-
-    Returns
-    -------
-    User
-        The authenticated user object.
-
-    Raises
-    ------
-    HTTPException
-        If the token is invalid, the user is not found, or the user is inactive.
+    Raises:
+        UnauthorizedException: If the token is invalid or the user does not exist.
 
     """
+    token_data = await verify_token(token, TokenType.ACCESS, db)
+    if token_data is None:
+        raise UnauthorizedException
+
+    if "@" in token_data.username_or_email:
+        user = await crud_users.get(db=db, email=token_data.username_or_email, is_deleted=False)
+    else:
+        user = await crud_users.get(db=db, username=token_data.username_or_email, is_deleted=False)
+
+    if user:
+        return cast("UserSchema", user)
+
+    raise UnauthorizedException
+
+
+async def get_optional_user(request: Request, db: Annotated[AsyncSession, Depends(async_get_db)]) -> UserSchema | None:
+    """Asynchronously retrieves the current user from the request if an Authorization header is present and valid.
+
+    Args:
+        request (Request): The incoming HTTP request object.
+        db (AsyncSession, optional): The database session dependency.
+
+    Returns:
+        UserSchema | None: The user information as a UserSchema object if a valid Bearer token is provided and verified; otherwise, None.
+
+    Notes:
+        - If the Authorization header is missing, malformed, or the token is invalid, returns None.
+        - Handles and logs unexpected exceptions except for HTTP 401 Unauthorized.
+
+    """
+    token = request.headers.get("Authorization")
+    if not token:
+        return None
+
     try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[security.ALGORITHM],
-        )
-        token_data = TokenPayload(**payload)
-    except (InvalidTokenError, ValidationError) as err:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
-        ) from err
-    user = session.get(User, token_data.sub)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return user
+        token_type, _, token_value = token.partition(" ")
+        if token_type.lower() != "bearer" or not token_value:
+            return None
+
+        token_data = await verify_token(token_value, TokenType.ACCESS, db)
+        if token_data is None:
+            return None
+
+        return await get_current_user(token_value, db=db)
+
+    except HTTPException as http_exc:
+        if http_exc.status_code != http.HTTPStatus.UNAUTHORIZED:
+            logger.exception("Unexpected HTTPException in get_optional_user: %s", http_exc.detail)
+        return None
+
+    except Exception:
+        logger.exception("Unexpected error in get_optional_user")
+        return None
 
 
-CurrentUser = Annotated[User, Depends(get_current_user)]
+async def get_current_superuser(current_user: Annotated[UserSchema, Depends(get_current_user)]) -> UserSchema:
+    """Dependency that ensures the current user has superuser privileges.
 
+    Args:
+        current_user (UserSchema): The currently authenticated user, injected by the get_current_user dependency.
 
-def get_current_active_superuser(current_user: CurrentUser) -> User:
-    """Ensure the current user is an active superuser.
+    Raises:
+        ForbiddenException: If the current user is not a superuser.
 
-    Parameters
-    ----------
-    current_user : CurrentUser
-        The currently authenticated user.
-
-    Returns
-    -------
-    User
-        The current user if they are a superuser.
-
-    Raises
-    ------
-    HTTPException
-        If the user does not have superuser privileges.
+    Returns:
+        dict: The current user dictionary if the user is a superuser.
 
     """
     if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=403,
-            detail="The user doesn't have enough privileges",
-        )
+        raise ForbiddenException
+
     return current_user

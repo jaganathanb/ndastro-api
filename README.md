@@ -67,5 +67,8 @@ API to serve data for ndastro-ui.
   ```
 - Make sure your environment variables (e.g., for test DB) are set if needed.
 
-## Source: [FastApi Template](https://github.com/fastapi/full-stack-fastapi-template/tree/master)
+## References: 
+1. [FastApi Template](https://github.com/fastapi/full-stack-fastapi-template/tree/master)
+2. [Fastapi Boilerplate](https://github.com/benavlabs/FastAPI-boilerplate)
+
 

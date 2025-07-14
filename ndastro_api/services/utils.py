@@ -7,7 +7,7 @@ and filtering planetary positions by rasi, using constants and models from ndast
 from __future__ import annotations
 
 import pathlib
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from skyfield.api import Loader
 
@@ -16,6 +16,7 @@ from ndastro_api.services.ayanamsa import get_lahiri_ayanamsa
 
 if TYPE_CHECKING:
     from datetime import datetime
+
 
 load = Loader(pathlib.Path(__file__).parent.parent / "resources" / "data")
 eph = load("de440s.bsp")
@@ -100,3 +101,40 @@ def get_ayanamsa_value(ayanamsa: str, date: datetime) -> float:
             return get_lahiri_ayanamsa(date)
         case _:
             return 0.0  # Default to 0.0 if no match found
+
+
+def compute_offset(page: int, items_per_page: int) -> int:
+    """Compute the offset for pagination based on page and items per page."""
+    return max((page - 1) * items_per_page, 0)
+
+
+def paginated_response(*, crud_data: Any, page: int, items_per_page: int) -> dict[str, Any]:
+    """Build a paginated response dictionary for list endpoints.
+
+    Args:
+        crud_data: An object or list containing the data to paginate. If an object, it should have 'items' and optionally 'total' attributes.
+        page (int): The current page number (1-based).
+        items_per_page (int): The number of items per page.
+
+    Returns:
+        dict: A dictionary containing:
+            - items: The list of items for the current page.
+            - total: The total number of items.
+            - page: The current page number.
+            - items_per_page: The number of items per page.
+            - next_page: The next page number, or None if there is no next page.
+            - prev_page: The previous page number, or None if there is no previous page.
+
+    """
+    """Build a paginated response dict for list endpoints."""
+    items = crud_data.get("data", [])
+    total_count = crud_data.get("total_count", 0)
+
+    return {
+        "items": items,
+        "total": total_count,
+        "total_count": total_count,
+        "has_more": (page * items_per_page) < total_count,
+        "page": page,
+        "items_per_page": items_per_page,
+    }

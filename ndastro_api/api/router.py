@@ -1,27 +1,11 @@
-"""API router setup for ndastro_api.
+"""Router configuration for the ndastro_api API.
 
-This module configures and includes all API route modules for the application.
+This module sets up the main API router and includes versioned sub-routers.
 """
 
 from fastapi import APIRouter
 
-from ndastro_api.api.routes import (
-    astro,
-    login,
-    private,
-    users,
-    usersettings,
-    utils,
-)
-from ndastro_api.core.config import settings
+from ndastro_api.api.v1.routes import router as v1_router
 
-api_router = APIRouter()
-api_router.include_router(login.router)
-api_router.include_router(users.router)
-api_router.include_router(utils.router)
-api_router.include_router(astro.router)
-api_router.include_router(usersettings.router)
-
-
-if settings.ENVIRONMENT in ("local", "test"):
-    api_router.include_router(private.router)
+router = APIRouter(prefix="/api")
+router.include_router(v1_router)

@@ -1,157 +1,230 @@
-"""Configuration settings and utilities for the ndastro API.
+"""Configuration module for ND Astro API.
 
-This module defines the Settings class for application configuration,
-including environment variables, database settings, email settings, and CORS handling.
+This module defines settings classes for application, database, cryptography,
+caching, rate limiting, and environment configuration, using Pydantic and Starlette.
 """
 
 from __future__ import annotations
 
-import logging
-import os
-import pathlib
-import secrets
-import warnings
-from typing import Annotated, Literal
+from enum import Enum
+from pathlib import Path
 
-from pydantic import (
-    AnyUrl,
-    BeforeValidator,
-    EmailStr,
-    HttpUrl,
-    computed_field,
-    model_validator,
-)
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import Self
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings
+from starlette.config import Config
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+current_file_dir = Path(__file__).resolve().parent
+env_path = current_file_dir.parent / ".env"
+config = Config(str(env_path))
+config = Config(env_path)
 
 
-def parse_cors(v: str | list[str]) -> list[str] | str:
-    """Parse the CORS origins value from environment or config.
+class AppSettings(BaseSettings):
+    """Application settings loaded from environment variables.
 
-    Args:
-        v (str | list[str]): The value to parse, typically a string or list.
-
-    Returns:
-        list[str] | str: A list of origins or the original value if already a list or string.
-
-    Raises:
-        ValueError: If the input cannot be parsed as a list or string.
+    Attributes:
+        APP_NAME (str): The name of the application. Defaults to "ND Astro Rest API".
+        APP_DESCRIPTION (str | None): A description of the application. Optional.
+        APP_VERSION (str | None): The version of the application. Optional.
+        LICENSE_NAME (str | None): The license name for the application. Optional.
+        CONTACT_NAME (str | None): The contact person's name for the application. Optional.
+        CONTACT_EMAIL (str | None): The contact email address for the application. Optional.
 
     """
-    if isinstance(v, str) and not v.startswith("["):
-        return [i.strip() for i in v.split(",")]
-    if isinstance(v, list | str):
-        return v
-    raise ValueError(v)
+
+    APP_NAME: str = config("APP_NAME", default="ND Astro Rest API")
+    APP_DESCRIPTION: str | None = config("APP_DESCRIPTION", default=None)
+    APP_VERSION: str | None = config("APP_VERSION", default=None)
+    LICENSE_NAME: str | None = config("LICENSE", default=None)
+    CONTACT_NAME: str | None = config("CONTACT_NAME", default=None)
+    CONTACT_EMAIL: str | None = config("CONTACT_EMAIL", default=None)
 
 
-class Settings(BaseSettings):
-    """Application configuration settings for the ndastro API.
+class CryptSettings(BaseSettings):
+    """Configuration settings for cryptographic operations and JWT authentication.
 
-    This class manages environment variables, database settings, email settings, CORS handling,
-    and other configuration options required for the application.
+    Attributes:
+        SECRET_KEY (SecretStr): The secret key used for cryptographic signing and encryption.
+        ALGORITHM (str): The algorithm used for JWT encoding/decoding (default: "HS256").
+        ACCESS_TOKEN_EXPIRE_MINUTES (int): The expiration time in minutes for access tokens (default: 30).
+        REFRESH_TOKEN_EXPIRE_DAYS (int): The expiration time in days for refresh tokens (default: 7).
+
     """
 
-    model_config = SettingsConfigDict(
-        env_file=f"{pathlib.Path(__file__).resolve().parent.parent}/{os.environ.get('ENV_FILE', '.env')}",
-        env_ignore_empty=True,
-        extra="ignore",
-    )
-    API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
-    # 60 minutes * 24 hours * 8 days = 8 days
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    FRONTEND_HOST: str = "http://localhost:5173"
-    ENVIRONMENT: Literal["local", "test", "staging", "production"] = "local"
+    SECRET_KEY: SecretStr = config("SECRET_KEY", cast=SecretStr)
+    ALGORITHM: str = config("ALGORITHM", default="HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = config("ACCESS_TOKEN_EXPIRE_MINUTES", default=30)
+    REFRESH_TOKEN_EXPIRE_DAYS: int = config("REFRESH_TOKEN_EXPIRE_DAYS", default=30)
 
-    BACKEND_CORS_ORIGINS: Annotated[
-        list[AnyUrl] | str,
-        BeforeValidator(parse_cors),
-    ] = []
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def all_cors_origins(self) -> list[str]:
-        """Return a list of all allowed CORS origins including the frontend host.
+class DatabaseSettings(BaseSettings):
+    """Configuration settings for the application's database connection.
 
-        Returns:
-            list[str]: A list of origins for CORS configuration.
+    This class should be extended with specific database-related settings
+    such as host, port, username, password, and database name. It inherits
+    from `BaseSettings` to enable environment variable parsing and validation.
 
-        """
-        return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
-            self.FRONTEND_HOST,
-        ]
+    Attributes:
+        (To be defined as needed for database configuration)
 
-    PROJECT_NAME: str = ""
-    SENTRY_DSN: HttpUrl | None = None
+    """
 
-    DB_NAME: str = ""
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def sqlalchemy_database_uri(self) -> str:
-        """Return the SQLAlchemy database URI for the application.
+class SQLiteSettings(DatabaseSettings):
+    """Settings for configuring SQLite database connections.
 
-        Returns:
-            str: The database URI string.
+    Attributes:
+        SQLITE_URI (str): The file path or URI to the SQLite database. Defaults to './ndastro_api/resources/data/ndastro_app.db'.
+        SQLITE_SYNC_PREFIX (str): The URI prefix used for synchronous SQLite connections. Defaults to 'sqlite:///'.
+        SQLITE_ASYNC_PREFIX (str): The URI prefix used for asynchronous SQLite connections using aiosqlite. Defaults to 'sqlite+aiosqlite:///'.
 
-        """
-        return f"sqlite:///{self.DB_NAME}"
+    """
 
-    SMTP_TLS: bool = True
-    SMTP_SSL: bool = False
-    SMTP_PORT: int = 587
-    SMTP_HOST: str | None = None
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
-    EMAILS_FROM_EMAIL: EmailStr | None = None
-    EMAILS_FROM_NAME: EmailStr | None = None
+    SQLITE_URI: str = config("SQLITE_URI", default="./ndastro_api/resources/data/ndastro_app.db")
+    SQLITE_SYNC_PREFIX: str = config("SQLITE_SYNC_PREFIX", default="sqlite:///")
+    SQLITE_ASYNC_PREFIX: str = config("SQLITE_ASYNC_PREFIX", default="sqlite+aiosqlite:///")
 
-    @model_validator(mode="after")
-    def _set_default_emails_from(self) -> Self:
-        if not self.EMAILS_FROM_NAME:
-            self.EMAILS_FROM_NAME = self.PROJECT_NAME
-        return self
 
-    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
+class MySQLSettings(DatabaseSettings):
+    """Configuration settings for connecting to a MySQL database.
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def emails_enabled(self) -> bool:
-        """Return True if email sending is enabled (SMTP host and from email are set).
+    Attributes:
+        MYSQL_USER (str): The username for the MySQL database connection. Defaults to "username".
+        MYSQL_PASSWORD (str): The password for the MySQL database connection. Defaults to "password".
+        MYSQL_SERVER (str): The hostname or IP address of the MySQL server. Defaults to "localhost".
+        MYSQL_PORT (int): The port number for the MySQL server. Defaults to 5432.
+        MYSQL_DB (str): The name of the MySQL database. Defaults to "dbname".
+        MYSQL_URI (str): The constructed MySQL URI using the provided user, password, server, port, and database.
+        MYSQL_SYNC_PREFIX (str): The prefix for synchronous MySQL connections. Defaults to "mysql://".
+        MYSQL_ASYNC_PREFIX (str): The prefix for asynchronous MySQL connections. Defaults to "mysql+aiomysql://".
+        MYSQL_URL (str | None): An optional full MySQL connection URL. Defaults to None.
 
-        Returns:
-            bool: True if emails can be sent, False otherwise.
+    """
 
-        """
-        return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
+    MYSQL_USER: str = config("MYSQL_USER", default="username")
+    MYSQL_PASSWORD: str = config("MYSQL_PASSWORD", default="password")
+    MYSQL_SERVER: str = config("MYSQL_SERVER", default="localhost")
+    MYSQL_PORT: int = config("MYSQL_PORT", default=5432)
+    MYSQL_DB: str = config("MYSQL_DB", default="dbname")
+    MYSQL_URI: str = f"{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_SERVER}:{MYSQL_PORT}/{MYSQL_DB}"
+    MYSQL_SYNC_PREFIX: str = config("MYSQL_SYNC_PREFIX", default="mysql://")
+    MYSQL_ASYNC_PREFIX: str = config("MYSQL_ASYNC_PREFIX", default="mysql+aiomysql://")
+    MYSQL_URL: str | None = config("MYSQL_URL", default=None)
 
-    EMAIL_TEST_USER: EmailStr = "test@example.com"
-    FIRST_SUPERUSER: EmailStr = ""
-    FIRST_SUPERUSER_PASSWORD: str = ""
 
-    def _check_default_secret(self, var_name: str, value: str | None) -> None:
-        if value == "changethis":
-            message = f'The value of {var_name} is "changethis", for security, please change it, at least for deployments.'
-            if self.ENVIRONMENT == "local":
-                warnings.warn(message, stacklevel=1)
-            else:
-                raise ValueError(message)
+class PostgresSettings(DatabaseSettings):
+    """Settings for configuring a PostgreSQL database connection.
 
-    @model_validator(mode="after")
-    def _enforce_non_default_secrets(self) -> Self:
-        self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        self._check_default_secret(
-            "FIRST_SUPERUSER_PASSWORD",
-            self.FIRST_SUPERUSER_PASSWORD,
-        )
+    Attributes:
+        POSTGRES_USER (str): Username for the PostgreSQL database. Defaults to "postgres".
+        POSTGRES_PASSWORD (str): Password for the PostgreSQL database. Defaults to "postgres".
+        POSTGRES_SERVER (str): Hostname or IP address of the PostgreSQL server. Defaults to "localhost".
+        POSTGRES_PORT (int): Port number for the PostgreSQL server. Defaults to 5432.
+        POSTGRES_DB (str): Name of the PostgreSQL database. Defaults to "postgres".
+        POSTGRES_SYNC_PREFIX (str): URI prefix for synchronous PostgreSQL connections. Defaults to "postgresql://".
+        POSTGRES_ASYNC_PREFIX (str): URI prefix for asynchronous PostgreSQL connections. Defaults to "postgresql+asyncpg://".
+        POSTGRES_URI (str): Constructed URI string for connecting to the PostgreSQL database using the provided credentials and server information.
+        POSTGRES_URL (str | None): Optional full PostgreSQL connection URL. If not provided, it defaults to None.
 
-        return self
+    """
+
+    POSTGRES_USER: str = config("POSTGRES_USER", default="postgres")
+    POSTGRES_PASSWORD: str = config("POSTGRES_PASSWORD", default="postgres")
+    POSTGRES_SERVER: str = config("POSTGRES_SERVER", default="localhost")
+    POSTGRES_PORT: int = config("POSTGRES_PORT", default=5432)
+    POSTGRES_DB: str = config("POSTGRES_DB", default="postgres")
+    POSTGRES_SYNC_PREFIX: str = config("POSTGRES_SYNC_PREFIX", default="postgresql://")
+    POSTGRES_ASYNC_PREFIX: str = config("POSTGRES_ASYNC_PREFIX", default="postgresql+asyncpg://")
+    POSTGRES_URI: str = f"{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"
+    POSTGRES_URL: str | None = config("POSTGRES_URL", default=None)
+
+
+class FirstUserSettings(BaseSettings):
+    """Settings for the initial admin user.
+
+    Attributes:
+        ADMIN_NAME (str): The display name of the admin user. Defaults to "admin".
+        ADMIN_EMAIL (str): The email address of the admin user. Defaults to "admin@admin.com".
+        ADMIN_USERNAME (str): The username for the admin user. Defaults to "admin".
+        ADMIN_PASSWORD (str): The password for the admin user. Defaults to "".
+
+    """
+
+    ADMIN_NAME: str = config("ADMIN_NAME", default="admin")
+    ADMIN_EMAIL: str = config("ADMIN_EMAIL", default="admin@dapps.com")
+    ADMIN_USERNAME: str = config("ADMIN_USERNAME", default="admin")
+    ADMIN_PASSWORD: str = config("ADMIN_PASSWORD", default="")
+
+
+class TestSettings(BaseSettings):
+    """TestSettings is a configuration class for managing test-specific settings."""
+
+    TEST_DATABASE_URI: str = config("TEST_DATABASE_URI", default="./test.db")
+    TEST_DATABASE_SYNC_PREFIX: str = config("TEST_DATABASE_SYNC_PREFIX", default="sqlite:///")
+    TEST_DATABASE_ASYNC_PREFIX: str = config("TEST_DATABASE_ASYNC_PREFIX", default="sqlite+aiosqlite:///")
+    TEST_DATABASE_URL: str | None = config("TEST_DATABASE_URL", default=None)
+
+
+class ClientSideCacheSettings(BaseSettings):
+    """ClientSideCacheSettings is a configuration class for managing client-side caching settings."""
+
+    CLIENT_CACHE_MAX_AGE: int = config("CLIENT_CACHE_MAX_AGE", default=60)
+
+
+class CRUDAdminSettings(BaseSettings):
+    """CRUDAdminSettings is a configuration class for managing CRUD Admin settings."""
+
+    CRUD_ADMIN_ENABLED: bool = config("CRUD_ADMIN_ENABLED", default=True)
+    CRUD_ADMIN_MOUNT_PATH: str = config("CRUD_ADMIN_MOUNT_PATH", default="/admin")
+
+    CRUD_ADMIN_ALLOWED_IPS_LIST: list[str] | None = None
+    CRUD_ADMIN_ALLOWED_NETWORKS_LIST: list[str] | None = None
+    CRUD_ADMIN_MAX_SESSIONS: int = config("CRUD_ADMIN_MAX_SESSIONS", default=10)
+    CRUD_ADMIN_SESSION_TIMEOUT: int = config("CRUD_ADMIN_SESSION_TIMEOUT", default=1440)
+    SESSION_SECURE_COOKIES: bool = config("SESSION_SECURE_COOKIES", default=True)
+
+    CRUD_ADMIN_TRACK_EVENTS: bool = config("CRUD_ADMIN_TRACK_EVENTS", default=True)
+    CRUD_ADMIN_TRACK_SESSIONS: bool = config("CRUD_ADMIN_TRACK_SESSIONS", default=True)
+
+
+class EnvironmentOption(Enum):
+    """Enumeration for different environment options."""
+
+    LOCAL = "local"
+    TEST = "test"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+
+class DatabaseType(Enum):
+    """Enumeration for different database types."""
+
+    SQLITE = "sqlite"
+    POSTGRES = "postgres"
+    MYSQL = "mysql"
+
+
+class EnvironmentSettings(BaseSettings):
+    """Settings for the application's environment configuration."""
+
+    ENVIRONMENT: EnvironmentOption = config("ENVIRONMENT", default=EnvironmentOption.LOCAL)
+    DATABASE_TYPE: DatabaseType = config("DATABASE_TYPE", default=DatabaseType.SQLITE)
+
+
+class Settings(
+    AppSettings,
+    PostgresSettings,
+    MySQLSettings,
+    SQLiteSettings,
+    CryptSettings,
+    FirstUserSettings,
+    TestSettings,
+    ClientSideCacheSettings,
+    CRUDAdminSettings,
+    EnvironmentSettings,
+):
+    """Main settings class that aggregates all configuration settings for the application."""
 
 
 settings = Settings()
-
-logger.info("Creating SQLModel engine with database URI: %s", settings.sqlalchemy_database_uri)
+"""Global settings instance for the application."""

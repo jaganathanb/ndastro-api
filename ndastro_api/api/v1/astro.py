@@ -6,10 +6,11 @@ from datetime import datetime
 from typing import Annotated, cast
 
 import pytz
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from skyfield.units import Angle
 
+from ndastro_api.api.v1.users import get_current_user
 from ndastro_api.core.enums.planet_enum import Planets
 from ndastro_api.services.kattams import get_kattams
 from ndastro_api.services.position import (
@@ -20,7 +21,7 @@ from ndastro_api.services.position import (
 )
 from ndastro_api.services.utils import get_ayanamsa_value
 
-router = APIRouter(prefix="/astro", tags=["astro"])
+router = APIRouter(prefix="/astro", tags=["Astro"], dependencies=[Depends(get_current_user)])
 
 
 class PlanetDetailResponse(BaseModel):

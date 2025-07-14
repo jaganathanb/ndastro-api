@@ -26,6 +26,11 @@ bcrypt = "^4.3.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 skyfield = "^1.53"
 pytz = "^2025.2"
+gunicorn = "^23.0.0"
+asyncpg = "^0.30.0"
+fastcrud = "^0.15.12"
+aiosqlite = "^0.21.0"
+python-jose = "^3.5.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
@@ -54,6 +59,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 150
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["ALL"]
