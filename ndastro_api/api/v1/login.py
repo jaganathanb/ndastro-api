@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ndastro_api.api.deps import get_current_user
 from ndastro_api.core.config import settings
 from ndastro_api.core.db.database import async_get_db
 from ndastro_api.core.exceptions.app_exceptions import (
@@ -64,12 +65,13 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post("/refresh")
-async def refresh_access_token(request: Request, db: Annotated[AsyncSession, Depends(async_get_db)]) -> dict[str, str]:
+@router.post("/refresh", dependencies=[Depends(get_current_user)])
+async def refresh_access_token(request: Request, response: Response, db: Annotated[AsyncSession, Depends(async_get_db)]) -> dict[str, str]:
     """Refresh the access token using a valid refresh token from the request cookies.
 
     Args:
         request (Request): The incoming HTTP request containing cookies.
+        response (Response): The FastAPI response object used to set cookies.
         db (AsyncSession): The asynchronous database session dependency.
 
     Returns:
@@ -88,4 +90,10 @@ async def refresh_access_token(request: Request, db: Annotated[AsyncSession, Dep
         raise RefreshTokenMissingInvalidException
 
     new_access_token = await create_access_token(data={"sub": user_data.username_or_email})
+
+    refresh_token = await create_refresh_token(data={"sub": user_data.username_or_email})
+    max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="lax", max_age=max_age)
+
     return {"access_token": new_access_token, "token_type": "bearer"}
