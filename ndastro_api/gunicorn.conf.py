@@ -8,7 +8,6 @@ import multiprocessing
 import tempfile
 
 # Server socket
-bind = "0.0.0.0:8000"
 backlog = 2048
 
 # Worker processes
