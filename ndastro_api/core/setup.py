@@ -14,18 +14,22 @@ from typing import TYPE_CHECKING, Any
 import fastapi
 from anyio.to_thread import current_default_thread_limiter
 from fastapi import APIRouter, Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
+from pydantic_settings import BaseSettings
 
 from ndastro_api.api.deps import get_current_superuser
 from ndastro_api.core.config import (
     AppSettings,
+    BaseSettings,
     ClientSideCacheSettings,
     DatabaseSettings,
     EnvironmentOption,
     EnvironmentSettings,
 )
 from ndastro_api.core.db.database import async_engine as engine
+from ndastro_api.middlewares.monitoring import MonitoringMiddleware
 from ndastro_api.models.user import Base
 
 if TYPE_CHECKING:
@@ -151,6 +155,52 @@ def create_application(
     application = FastAPI(lifespan=lifespan, **kwargs)
     application.include_router(router)
 
+    add_middlewares(settings, application)
+    add_openapi_doc(settings, application)
+
+    return application
+
+
+def add_middlewares(settings: BaseSettings, application: FastAPI) -> None:
+    """Add custom middlewares to the FastAPI application.
+
+    This function is a placeholder for adding additional middlewares to the FastAPI application.
+    Currently, it does not implement any specific middlewares but can be extended in the future.
+
+    Args:
+        settings (BaseSettings): The settings object used to configure middleware behavior.
+        application (FastAPI): The FastAPI application instance to which middlewares will be added.
+
+    Returns:
+        None
+
+    """
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS if isinstance(settings, AppSettings) else ["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    application.add_middleware(MonitoringMiddleware)
+
+
+def add_openapi_doc(settings: BaseSettings, application: FastAPI) -> None:
+    """Add custom OpenAPI documentation routes to the FastAPI application based on the environment settings.
+
+    In non-production environments, this function registers routes for Swagger UI (`/docs`), ReDoc (`/redoc`),
+    and the OpenAPI schema (`/openapi.json`). In non-local environments, access to these documentation routes
+    requires superuser authentication.
+
+    Args:
+        settings (BaseSettings): The application settings, used to determine the current environment.
+        application (FastAPI): The FastAPI application instance to which documentation routes will be added.
+
+    Returns:
+        FastAPI: The FastAPI application instance with documentation routes included (if applicable).
+
+    """
     if isinstance(settings, EnvironmentSettings) and settings.ENVIRONMENT != EnvironmentOption.PRODUCTION:
         docs_router = APIRouter()
         if settings.ENVIRONMENT != EnvironmentOption.LOCAL:
@@ -169,5 +219,3 @@ def create_application(
             return get_openapi(title=application.title, version="v1.0", routes=application.routes)
 
         application.include_router(docs_router)
-
-    return application

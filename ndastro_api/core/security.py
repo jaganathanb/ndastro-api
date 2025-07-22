@@ -28,7 +28,7 @@ ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 REFRESH_TOKEN_EXPIRE_DAYS = settings.REFRESH_TOKEN_EXPIRE_DAYS
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 class TokenType(str, Enum):
@@ -53,9 +53,9 @@ def get_password_hash(password: str) -> str:
 async def authenticate_user(username_or_email: str, password: str, db: AsyncSession) -> dict[str, Any] | Literal[False]:
     """Authenticate a user by username/email and password, returning user dict or False."""
     if "@" in username_or_email:
-        db_user = await crud_users.get(db=db, email=username_or_email, is_deleted=False)
+        db_user = await crud_users.get(db=db, email=username_or_email, is_deleted=False, is_active=True)
     else:
-        db_user = await crud_users.get(db=db, username=username_or_email, is_deleted=False)
+        db_user = await crud_users.get(db=db, username=username_or_email, is_deleted=False, is_active=True)
 
     if not db_user:
         return False

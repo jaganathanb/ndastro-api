@@ -10,12 +10,13 @@ from typing import Any
 
 import emails  # type: ignore[import-untyped]
 import jwt
+from emails.backend.response import SMTPResponse
 from jinja2 import Template
 from jwt.exceptions import InvalidTokenError
 
 from ndastro_api.core import security
 from ndastro_api.core.config import settings
-from ndastro_api.core.exceptions import EmailConfigurationError
+from ndastro_api.core.exceptions.app_exceptions import EmailConfigurationError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ def send_email(
     email_to: str,
     subject: str = "",
     html_content: str = "",
-) -> None:
+) -> SMTPResponse:
     """Send an email using the configured SMTP server.
 
     Parameters
@@ -81,7 +82,7 @@ def send_email(
         If email sending is not enabled in the settings.
 
     """
-    if not settings.emails_enabled:
+    if not settings.EMAILS_ENABLED:
         raise EmailConfigurationError
     message = emails.Message(
         subject=subject,
@@ -96,9 +97,11 @@ def send_email(
     if settings.SMTP_USER:
         smtp_options["user"] = settings.SMTP_USER
     if settings.SMTP_PASSWORD:
-        smtp_options["password"] = settings.SMTP_PASSWORD
+        smtp_options["password"] = settings.SMTP_PASSWORD.get_secret_value()
     response = message.send(to=email_to, smtp=smtp_options)
     logger.info("send email result: %s", response)
+
+    return response
 
 
 def generate_test_email(email_to: str) -> EmailData:
@@ -111,11 +114,11 @@ def generate_test_email(email_to: str) -> EmailData:
         EmailData: An object containing the HTML content and subject of the test email.
 
     """
-    project_name = settings.PROJECT_NAME
+    project_name = settings.APP_NAME
     subject = f"{project_name} - Test email"
     html_content = render_email_template(
         template_name="test_email.html",
-        context={"project_name": settings.PROJECT_NAME, "email": email_to},
+        context={"project_name": settings.APP_NAME, "email": email_to},
     )
     return EmailData(html_content=html_content, subject=subject)
 
@@ -132,13 +135,13 @@ def generate_reset_password_email(email_to: str, email: str, token: str) -> Emai
         EmailData: An object containing the HTML content and subject for the reset password email.
 
     """
-    project_name = settings.PROJECT_NAME
+    project_name = settings.APP_NAME
     subject = f"{project_name} - Password recovery for user {email}"
-    link = f"{settings.FRONTEND_HOST}/reset-password?token={token}"
+    link = f"{settings.FRONTENDADMIN_HOST}/reset-password?token={token}"
     html_content = render_email_template(
         template_name="reset_password.html",
         context={
-            "project_name": settings.PROJECT_NAME,
+            "project_name": settings.APP_NAME,
             "username": email,
             "email": email_to,
             "valid_hours": settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS,
@@ -170,16 +173,16 @@ def generate_new_account_email(
         The email content and subject for the new account notification.
 
     """
-    project_name = settings.PROJECT_NAME
+    project_name = settings.APP_NAME
     subject = f"{project_name} - New account for user {username}"
     html_content = render_email_template(
         template_name="new_account.html",
         context={
-            "project_name": settings.PROJECT_NAME,
+            "project_name": settings.APP_NAME,
             "username": username,
             "password": password,
             "email": email_to,
-            "link": settings.FRONTEND_HOST,
+            "link": settings.FRONTENDADMIN_HOST,
         },
     )
     return EmailData(html_content=html_content, subject=subject)
@@ -205,7 +208,7 @@ def generate_password_reset_token(email: str) -> str:
     exp = expires.timestamp()
     return jwt.encode(
         {"exp": exp, "nbf": now, "sub": email},
-        settings.SECRET_KEY,
+        settings.SECRET_KEY.get_secret_value(),
         algorithm=security.ALGORITHM,
     )
 
@@ -227,7 +230,7 @@ def verify_password_reset_token(token: str) -> str | None:
     try:
         decoded_token = jwt.decode(
             token,
-            settings.SECRET_KEY,
+            settings.SECRET_KEY.get_secret_value(),
             algorithms=[security.ALGORITHM],
         )
         return str(decoded_token["sub"])

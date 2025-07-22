@@ -24,10 +24,10 @@ from ndastro_api.schemas.tier import (  # Adjust the import path as needed
 )
 from ndastro_api.services.utils import compute_offset, paginated_response
 
-router = APIRouter(tags=["tiers"])
+router = APIRouter(tags=["Tiers"], prefix="/tiers")
 
 
-@router.post("/tier", dependencies=[Depends(get_current_superuser)], status_code=201)
+@router.post("/", dependencies=[Depends(get_current_superuser)], status_code=201, summary="Create a new tier.")
 async def write_tier(
     tier: TierCreate,
     db: Annotated[AsyncSession, Depends(async_get_db)],
@@ -53,7 +53,9 @@ async def write_tier(
     return cast("TierRead", tier_read)
 
 
-@router.get("/tiers", dependencies=[Depends(get_current_user)], response_model=PaginatedListResponse[TierRead])
+@router.get(
+    "/", dependencies=[Depends(get_current_user)], response_model=PaginatedListResponse[TierRead], summary="Get a paginated list of all tiers."
+)
 async def read_tiers(
     db: Annotated[AsyncSession, Depends(async_get_db)],
     page: int = 1,
@@ -66,7 +68,7 @@ async def read_tiers(
     return response
 
 
-@router.get("/tier/{name}", dependencies=[Depends(get_current_user)])
+@router.get("/{name}", dependencies=[Depends(get_current_user)], summary="Get a tier by name.")
 async def read_tier(
     name: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
@@ -79,7 +81,7 @@ async def read_tier(
     return cast("TierRead", db_tier)
 
 
-@router.patch("/tier/{name}", dependencies=[Depends(get_current_superuser)])
+@router.patch("/{name}", dependencies=[Depends(get_current_superuser)], summary="Update a tier by name.")
 async def patch_tier(
     name: str,
     values: TierUpdate,
@@ -94,7 +96,7 @@ async def patch_tier(
     return {"message": "Tier updated"}
 
 
-@router.delete("/tier/{name}", dependencies=[Depends(get_current_superuser)])
+@router.delete("/{name}", dependencies=[Depends(get_current_superuser)], summary="Delete a tier by name.")
 async def erase_tier(
     name: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],

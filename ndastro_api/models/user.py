@@ -25,6 +25,7 @@ class User(Base):
         created_at (datetime): Timestamp when the user was created (timezone-aware).
         updated_at (datetime | None): Timestamp when the user was last updated (timezone-aware).
         deleted_at (datetime | None): Timestamp when the user was deleted (timezone-aware).
+        is_active (bool): Indicates if the user is currently active. Indexed for fast lookup.
         is_deleted (bool): Indicates if the user is marked as deleted. Indexed.
         is_superuser (bool): Indicates if the user has superuser privileges.
         tier_id (int | None): Foreign key referencing the user's tier. Indexed.
@@ -45,6 +46,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default_factory=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    is_active: Mapped[bool] = mapped_column(default=True, index=True)
     is_deleted: Mapped[bool] = mapped_column(default=False, index=True)
     is_superuser: Mapped[bool] = mapped_column(default=False)
 

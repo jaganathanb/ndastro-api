@@ -5,6 +5,7 @@ This module provides an API route to check the health status of the API and data
 
 from typing import Annotated
 
+import psutil  # type: ignore[import]
 import sqlalchemy
 import sqlalchemy.exc
 from fastapi import APIRouter, Depends
@@ -50,3 +51,17 @@ async def health_check(db: DBSession) -> dict:
     """Endpoint to check the health status of the API and database connection."""
     result = await test_connection(db)
     return {"status": "healthy"} if result else {"status": "unhealthy"}
+
+
+@router.get("/metrics")
+async def get_metrics() -> dict[str, float]:
+    """Asynchronously retrieves system health metrics including CPU usage, memory usage, and disk usage.
+
+    Returns:
+        dict: A dictionary containing the following keys:
+            - 'cpu_percent' (float): The current CPU utilization percentage.
+            - 'memory_percent' (float): The current memory utilization percentage.
+            - 'disk_usage' (float): The current disk usage percentage for the root directory.
+
+    """
+    return {"cpu_percent": psutil.cpu_percent(), "memory_percent": psutil.virtual_memory().percent, "disk_usage": psutil.disk_usage("/").percent}

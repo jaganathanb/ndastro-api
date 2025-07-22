@@ -8,17 +8,17 @@ from fastapi import APIRouter, Cookie, Depends, Response
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ndastro_api.api.deps import oauth2_scheme
+from ndastro_api.api.deps import get_current_user, oauth2_scheme
 from ndastro_api.core.db.database import async_get_db
 from ndastro_api.core.exceptions.http_exceptions import UnauthorizedException
 from ndastro_api.core.security import blacklist_tokens
 
-router = APIRouter(tags=["Auth"])
+router = APIRouter(tags=["Auth"], prefix="/auth")
 
 DBSession = Annotated[AsyncSession, Depends(async_get_db)]
 
 
-@router.post("/logout")
+@router.post("/logout", dependencies=[Depends(get_current_user)], summary="Log out the current user.")
 async def logout(
     response: Response,
     access_token: Annotated[str, Depends(oauth2_scheme)],

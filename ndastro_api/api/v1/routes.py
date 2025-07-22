@@ -9,7 +9,7 @@ from ndastro_api.api.v1.astro import router as astro
 from ndastro_api.api.v1.health import router as health
 from ndastro_api.api.v1.login import router as login
 from ndastro_api.api.v1.logout import router as logout
-from ndastro_api.api.v1.tier import router as tier
+from ndastro_api.api.v1.tiers import router as tier
 from ndastro_api.api.v1.users import router as user
 
 router = APIRouter(prefix="/v1")

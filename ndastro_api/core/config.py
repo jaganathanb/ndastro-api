@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
+from typing import cast
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
@@ -38,6 +39,9 @@ class AppSettings(BaseSettings):
     LICENSE_NAME: str | None = config("LICENSE", default=None)
     CONTACT_NAME: str | None = config("CONTACT_NAME", default=None)
     CONTACT_EMAIL: str | None = config("CONTACT_EMAIL", default=None)
+    FRONTEND_HOST: str | None = config("FRONTEND_HOST", default="ndastro-ui.onrender.com")
+    FRONTENDADMIN_HOST: str | None = config("FRONTENDADMIN_HOST", default="ndastro-pwd-mgnt.onrender.com")
+    CORS_ORIGINS: list[str] = config("CORS_ORIGINS", cast=list, default=["*"])
 
 
 class CryptSettings(BaseSettings):
@@ -211,6 +215,22 @@ class EnvironmentSettings(BaseSettings):
     DATABASE_TYPE: DatabaseType = config("DATABASE_TYPE", default=DatabaseType.SQLITE)
 
 
+class EmailSettings(BaseSettings):
+    """Settings for email configuration."""
+
+    EMAILS_ENABLED: bool = config("EMAILS_ENABLED", default=False)
+    EMAILS_FROM_NAME: str = config("EMAILS_FROM_NAME", default="ND Astro by DApps")
+    EMAILS_FROM_EMAIL: str = config("EMAILS_FROM_EMAIL", default="ndastro@dhuruvah.in")
+    SMTP_HOST: str = config("SMTP_HOST", default="smtppro.zoho.in")
+    SMTP_PORT: int = config("SMTP_PORT", default=465)
+    SMTP_TLS: bool = config("SMTP_TLS", default=False)
+    SMTP_SSL: bool = config("SMTP_SSL", default=True)
+    SMTP_USER: str | None = config("SMTP_USER", default="ndastro@dhuruvah.in")
+    SMTP_PASSWORD: SecretStr | None = cast("SecretStr", config("SMTP_PASSWORD", default=None))
+    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = config("EMAIL_RESET_TOKEN_EXPIRE_HOURS", default=24)
+    EMAIL_TEST_RECIPIENT: str | None = config("EMAIL_TEST_RECIPIENT", default=None)
+
+
 class Settings(
     AppSettings,
     PostgresSettings,
@@ -222,6 +242,7 @@ class Settings(
     ClientSideCacheSettings,
     CRUDAdminSettings,
     EnvironmentSettings,
+    EmailSettings,
 ):
     """Main settings class that aggregates all configuration settings for the application."""
 

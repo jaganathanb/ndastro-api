@@ -19,9 +19,9 @@ if TYPE_CHECKING:
 class UserBase(BaseModel):
     """Base schema for user information (name, username, email)."""
 
-    name: Annotated[str, Field(min_length=2, max_length=30, examples=["User Userson"])]
-    username: Annotated[str, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9]+$", examples=["userson"])]
-    email: Annotated[EmailStr, Field(examples=["user.userson@example.com"])]
+    name: Annotated[str, Field(min_length=2, max_length=30, examples=["User Jagan"])]
+    username: Annotated[str, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9]+$", examples=["userjagan"])]
+    email: Annotated[EmailStr, Field(examples=["userjagan@example.com"])]
 
 
 class UserSchema(TimestampSchema, UserBase, UUIDSchema, PersistentDeletion):
@@ -30,6 +30,7 @@ class UserSchema(TimestampSchema, UserBase, UUIDSchema, PersistentDeletion):
     profile_image_url: Annotated[str, Field(default="https://www.profileimageurl.com")]
     hashed_password: str
     is_superuser: bool = False
+    is_active: bool
     tier_id: int | None = None
 
 
@@ -38,9 +39,9 @@ class UserRead(BaseModel):
 
     id: int
 
-    name: Annotated[str, Field(min_length=2, max_length=30, examples=["User Userson"])]
-    username: Annotated[str, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9]+$", examples=["userson"])]
-    email: Annotated[EmailStr, Field(examples=["user.userson@example.com"])]
+    name: Annotated[str, Field(min_length=2, max_length=30, examples=["User Jagan"])]
+    username: Annotated[str, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9]+$", examples=["userjagan"])]
+    email: Annotated[EmailStr, Field(examples=["userjagan@example.com"])]
     profile_image_url: str
     tier_id: int | None
 
@@ -64,9 +65,9 @@ class UserUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    name: Annotated[str | None, Field(min_length=2, max_length=30, examples=["User Userberg"], default=None)]
-    username: Annotated[str | None, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9]+$", examples=["userberg"], default=None)]
-    email: Annotated[EmailStr | None, Field(examples=["user.userberg@example.com"], default=None)]
+    name: Annotated[str | None, Field(min_length=2, max_length=30, examples=["User Jagan"], default=None)]
+    username: Annotated[str | None, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9]+$", examples=["userjagan"], default=None)]
+    email: Annotated[EmailStr | None, Field(examples=["userjagan@example.com"], default=None)]
     profile_image_url: Annotated[
         str | None,
         Field(pattern=r"^(https?|ftp)://[^\s/$.?#].[^\s]*$", examples=["https://www.profileimageurl.com"], default=None),
@@ -98,3 +99,12 @@ class UserRestoreDeleted(BaseModel):
     """Schema for restoring a soft-deleted user."""
 
     is_deleted: bool
+
+
+class UserPasswordUpdate(BaseModel):
+    """Schema for updating a user's password."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    token: Annotated[str, Field(min_length=1, examples=["reset_token_123"])]
+    new_password: Annotated[str, Field(pattern=r"^.{8,}|[0-9]+|[A-Z]+|[a-z]+|[^a-zA-Z0-9]+$", examples=["Str1ngst!"])]

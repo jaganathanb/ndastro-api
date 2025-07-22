@@ -20,12 +20,15 @@ from ndastro_api.core.exceptions.http_exceptions import (
 from ndastro_api.core.logger import logging
 from ndastro_api.core.security import TokenType, oauth2_scheme, verify_token
 from ndastro_api.crud.users import crud_users
-from ndastro_api.schemas.user import UserSchema  # noqa: TC001 # Required to be imported NOT as type check because openapi needs it
+from ndastro_api.schemas.user import (  # Required to be imported NOT as type check because openapi needs it
+    UserRead,
+    UserSchema,
+)
 
 logger = logging.getLogger(__name__)
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[AsyncSession, Depends(async_get_db)]) -> UserSchema | None:
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[AsyncSession, Depends(async_get_db)]) -> UserRead | None:
     """Retrieve the current authenticated user based on the provided OAuth2 token.
 
     Args:
@@ -44,17 +47,21 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: An
         raise UnauthorizedException
 
     if "@" in token_data.username_or_email:
-        user = await crud_users.get(db=db, email=token_data.username_or_email, is_deleted=False)
+        user = await crud_users.get(
+            db=db, email=token_data.username_or_email, is_deleted=False, is_active=True, return_as_model=True, schema_to_select=UserRead
+        )
     else:
-        user = await crud_users.get(db=db, username=token_data.username_or_email, is_deleted=False)
+        user = await crud_users.get(
+            db=db, username=token_data.username_or_email, is_deleted=False, is_active=True, return_as_model=True, schema_to_select=UserRead
+        )
 
     if user:
-        return cast("UserSchema", user)
+        return cast("UserRead", user)
 
     raise UnauthorizedException
 
 
-async def get_optional_user(request: Request, db: Annotated[AsyncSession, Depends(async_get_db)]) -> UserSchema | None:
+async def get_optional_user(request: Request, db: Annotated[AsyncSession, Depends(async_get_db)]) -> UserRead | None:
     """Asynchronously retrieves the current user from the request if an Authorization header is present and valid.
 
     Args:

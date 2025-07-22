@@ -21,9 +21,11 @@ from ndastro_api.core.security import (
     blacklist_token,
     get_password_hash,
     oauth2_scheme,
+    settings,
 )
 from ndastro_api.crud.tier import crud_tiers
 from ndastro_api.crud.users import crud_users
+from ndastro_api.email_helper import generate_new_account_email, send_email
 from ndastro_api.schemas.pagination import PaginatedListResponse
 from ndastro_api.schemas.tier import TierRead
 from ndastro_api.schemas.user import (
@@ -35,10 +37,10 @@ from ndastro_api.schemas.user import (
 )
 from ndastro_api.services.utils import compute_offset, paginated_response
 
-router = APIRouter(tags=["Users"], dependencies=[Depends(get_current_user)])
+router = APIRouter(tags=["Users"], prefix="/users", dependencies=[Depends(get_current_user)])
 
 
-@router.post("/user", dependencies=[Depends(get_current_superuser)], response_model=UserRead, status_code=201)
+@router.post("/", dependencies=[Depends(get_current_superuser)], response_model=UserRead, status_code=201, summary="Create a new user.")
 async def write_user(user: UserCreate, db: Annotated[AsyncSession, Depends(async_get_db)]) -> UserRead:
     """Create a new user in the database after validating uniqueness of email and username.
 
@@ -71,14 +73,24 @@ async def write_user(user: UserCreate, db: Annotated[AsyncSession, Depends(async
     user_internal = UserCreateInternal(**user_internal_dict)
     created_user = await crud_users.create(db=db, object=user_internal)
 
-    user_read = await crud_users.get(db=db, id=created_user.id, schema_to_select=UserRead)
+    user_read = cast(
+        "UserRead", await crud_users.get(db=db, id=created_user.id, return_as_model=True, is_deleted=False, is_active=True, schema_to_select=UserRead)
+    )
     if user_read is None:
         raise NotFoundException
+
+    if settings.EMAILS_ENABLED and user_read.email:
+        email_data = generate_new_account_email(email_to=user_read.email, username=user_read.username, password=user_internal_dict["password"])
+        send_email(
+            email_to=user_read.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content,
+        )
 
     return cast("UserRead", user_read)
 
 
-@router.get("/users", response_model=PaginatedListResponse[UserRead])
+@router.get("/", response_model=PaginatedListResponse[UserRead], summary="Get a paginated list of all users.")
 async def read_users(db: Annotated[AsyncSession, Depends(async_get_db)], page: int = 1, items_per_page: int = 10) -> dict:
     """Retrieve a paginated list of users from the database.
 
@@ -96,27 +108,14 @@ async def read_users(db: Annotated[AsyncSession, Depends(async_get_db)], page: i
         offset=compute_offset(page, items_per_page),
         limit=items_per_page,
         is_deleted=False,
+        is_active=True,
     )
 
     response: dict[str, Any] = paginated_response(crud_data=users_data, page=page, items_per_page=items_per_page)
     return response
 
 
-@router.get("/user/me/", response_model=UserRead)
-async def read_users_me(current_user: Annotated[dict, Depends(get_current_user)]) -> dict:
-    """Retrieve the current authenticated user's information.
-
-    Args:
-        current_user (dict): The currently authenticated user, injected by dependency.
-
-    Returns:
-        dict: The current user's information.
-
-    """
-    return current_user
-
-
-@router.get("/user/{username}", response_model=UserRead)
+@router.get("/{username}", response_model=UserRead, summary="Retrieve a user by username.")
 async def read_user(username: str, db: Annotated[AsyncSession, Depends(async_get_db)]) -> UserRead:
     """Retrieve a user by username from the database.
 
@@ -138,11 +137,11 @@ async def read_user(username: str, db: Annotated[AsyncSession, Depends(async_get
     return cast("UserRead", db_user)
 
 
-@router.patch("/user/{username}")
+@router.patch("/{username}", summary="Update a user by username.")
 async def patch_user(
     values: UserUpdate,
     username: str,
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserRead, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> dict[str, str]:
     """Update the details of an existing user.
@@ -168,12 +167,12 @@ async def patch_user(
         DuplicateValueException: If the new username or email already exists.
 
     """
-    db_user = await crud_users.get(db=db, username=username, schema_to_select=UserRead)
+    db_user = await crud_users.get(db=db, username=username, return_as_model=True, schema_to_select=UserRead)
     if db_user is None:
         raise NotFoundException
 
     db_user = cast("UserRead", db_user)
-    if db_user.username != current_user["username"]:
+    if db_user.username != current_user.username:
         raise ForbiddenException
 
     if values.username != db_user.username:
@@ -192,7 +191,7 @@ async def patch_user(
     return {"message": "User updated"}
 
 
-@router.delete("/user/{username}", dependencies=[Depends(get_current_superuser)])
+@router.delete("/{username}", dependencies=[Depends(get_current_superuser)], summary="Delete a user by username.")
 async def erase_user(
     username: str,
     current_user: Annotated[dict, Depends(get_current_user)],
@@ -227,7 +226,7 @@ async def erase_user(
     return {"message": "User deleted"}
 
 
-@router.delete("/db_user/{username}", dependencies=[Depends(get_current_superuser)])
+@router.delete("/db_user/{username}", dependencies=[Depends(get_current_superuser)], summary="Delete a user from the database by username.")
 async def erase_db_user(
     username: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
@@ -256,7 +255,7 @@ async def erase_db_user(
     return {"message": "User deleted from the database"}
 
 
-@router.get("/user/{username}/tier")
+@router.get("/{username}/tier", summary="Retrieve the tier information for a user by username.")
 async def read_user_tier(username: str, db: Annotated[AsyncSession, Depends(async_get_db)]) -> dict | None:
     """Retrieve the tier information for a user identified by username.
 
@@ -294,7 +293,7 @@ async def read_user_tier(username: str, db: Annotated[AsyncSession, Depends(asyn
     return user_dict
 
 
-@router.patch("/user/{username}/tier", dependencies=[Depends(get_current_superuser)])
+@router.patch("/{username}/tier", dependencies=[Depends(get_current_superuser)], summary="Update the tier of a user by username.")
 async def patch_user_tier(
     username: str,
     values: UserTierUpdate,
