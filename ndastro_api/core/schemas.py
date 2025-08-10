@@ -123,16 +123,35 @@ class PersistentDeletion(BaseModel):
         return None
 
 
+class AuthToken(BaseModel):
+    """Base schema for authentication tokens.
+
+    Attributes:
+        access_token (AccessToken | None): The access token object, if available.
+        refresh_token (RefreshToken | None): The refresh token object, if available.
+        username (str): The username associated with the token.
+
+    This class can be extended to include additional fields or validation logic specific to token handling.
+
+    """
+
+    username: str
+    access_token: Token | None = None
+    refresh_token: Token | None = None
+
+
 class Token(BaseModel):
-    """Represents an authentication token.
+    """Represents an authentication access token.
 
     Attributes:
         access_token (str): The JWT or access token string.
+        expires_in (int): The time in seconds until the token expires.
         token_type (str): The type of the token (e.g., "bearer").
 
     """
 
-    access_token: str
+    token: str
+    expires_in: int
     token_type: str
 
 

@@ -42,6 +42,7 @@ class AppSettings(BaseSettings):
     FRONTEND_HOST: str | None = config("FRONTEND_HOST", default="ndastro-ui.onrender.com")
     FRONTENDADMIN_HOST: str | None = config("FRONTENDADMIN_HOST", default="ndastro-pwd-mgnt.onrender.com")
     CORS_ORIGINS: list[str] = config("CORS_ORIGINS", cast=list, default=["*"])
+    TOKEN_TYPE: str = config("TOKEN_TYPE", default="bearer")
 
 
 class CryptSettings(BaseSettings):

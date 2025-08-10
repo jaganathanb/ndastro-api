@@ -21,7 +21,9 @@
         "args": [
             "ndastro_api.main:app",
             "--reload",
-            "--port=6001"
+            "--port=6001",
+          //  "--ssl-keyfile=scripts/server.key",
+          //  "--ssl-certfile=scripts/server.crt"
         ],
         "cwd": "${workspaceFolder}",
         "jinja": true,

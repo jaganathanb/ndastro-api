@@ -4,7 +4,7 @@ from datetime import timedelta
 from typing import Annotated, cast
 
 from emails.backend.smtp.exceptions import SMTPConnectNetworkError
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +19,7 @@ from ndastro_api.core.exceptions.http_exceptions import (
     InvalidInputException,
     NotFoundException,
 )
-from ndastro_api.core.schemas import Token
+from ndastro_api.core.schemas import AuthToken, Token
 from ndastro_api.core.security import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     TokenType,
@@ -41,12 +41,11 @@ from ndastro_api.schemas.user import UserPasswordUpdate, UserRead
 router = APIRouter(tags=["Auth"], prefix="/auth")
 
 
-@router.post("/login", response_model=Token, summary="Login to obtain access and refresh tokens.")
+@router.post("/login", summary="Login to obtain access and refresh tokens.")
 async def login_for_access_token(
-    response: Response,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(async_get_db)],
-) -> dict[str, str]:
+) -> AuthToken:
     """Authenticate a user and generate access and refresh tokens.
 
     This endpoint validates the provided username/email and password, and if authentication is successful,
@@ -72,21 +71,22 @@ async def login_for_access_token(
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await create_access_token(data={"sub": user["username"]}, expires_delta=access_token_expires)
 
-    refresh_token = await create_refresh_token(data={"sub": user["username"]})
-    max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    refresh_token_expires = settings.REFRESH_TOKEN_EXPIRE_DAYS
+    refresh_token = await create_refresh_token(data={"sub": user["username"]}, expires_delta=timedelta(days=refresh_token_expires))
 
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="lax", max_age=max_age)
+    return AuthToken(
+        username=user["username"],
+        access_token=Token(token=access_token, expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60, token_type=settings.TOKEN_TYPE),
+        refresh_token=Token(token=refresh_token, expires_in=refresh_token_expires * 24 * 60 * 60, token_type=settings.TOKEN_TYPE),
+    )
 
-    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
-
-@router.post("/refresh", dependencies=[Depends(get_current_user)], response_model=Token, summary="Rotate access and refresh tokens.")
-async def refresh_access_token(request: Request, response: Response, db: Annotated[AsyncSession, Depends(async_get_db)]) -> dict[str, str]:
+@router.post("/refresh", dependencies=[Depends(get_current_user)], summary="Rotate access and refresh tokens.")
+async def refresh_access_token(body: Token, db: Annotated[AsyncSession, Depends(async_get_db)]) -> AuthToken:
     """Refresh the access token using a valid refresh token from the request cookies.
 
     Args:
-        request (Request): The incoming HTTP request containing cookies.
-        response (Response): The FastAPI response object used to set cookies.
+        body (Token): The request body containing the refresh token.
         db (AsyncSession): The asynchronous database session dependency.
 
     Returns:
@@ -96,7 +96,7 @@ async def refresh_access_token(request: Request, response: Response, db: Annotat
         RefreshTokenMissingInvalidException: If the refresh token is missing or invalid.
 
     """
-    refresh_token = request.cookies.get("refresh_token")
+    refresh_token = body.token
     if not refresh_token:
         raise RefreshTokenMissingInvalidException
 
@@ -104,14 +104,20 @@ async def refresh_access_token(request: Request, response: Response, db: Annotat
     if not user_data:
         raise RefreshTokenMissingInvalidException
 
-    new_access_token = await create_access_token(data={"sub": user_data.username_or_email})
+    new_access_token = await create_access_token(
+        data={"sub": user_data.username_or_email}, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
 
-    refresh_token = await create_refresh_token(data={"sub": user_data.username_or_email})
-    max_age = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    refresh_token = await create_refresh_token(
+        data={"sub": user_data.username_or_email}, expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    )
+    refresh_token_expires = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="lax", max_age=max_age)
-
-    return {"access_token": new_access_token, "token_type": "bearer", "refresh_token": refresh_token}
+    return AuthToken(
+        username=user_data.username_or_email,
+        access_token=Token(token=new_access_token, expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60, token_type=settings.TOKEN_TYPE),
+        refresh_token=Token(token=refresh_token, expires_in=refresh_token_expires, token_type=settings.TOKEN_TYPE),
+    )
 
 
 @router.get("/me", response_model=UserRead, summary="Get current authenticated user")
