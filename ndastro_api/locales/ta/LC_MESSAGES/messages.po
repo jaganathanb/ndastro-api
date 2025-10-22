@@ -1,0 +1,213 @@
+# Tamil translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-10-12 16:46+0530\n"
+"PO-Revision-Date: 2025-10-12 15:41+0530\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ta\n"
+"Language-Team: ta <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ndastro_api/api/v1/astro.py:333
+msgid "DateFormat"
+msgstr "dd/MM/YYYY"
+
+#: ndastro_api/api/v1/astro.py:334
+msgid "TimeFormat"
+msgstr "hh:mm a"
+
+#: ndastro_api/api/v1/astro.py:344
+msgid "Coming Soon"
+msgstr "விரைவில் வரும்"
+
+#: ndastro_api/api/v1/astro.py:345 ndastro_api/core/i18n_messages.py:47
+msgid "Birth Chart"
+msgstr "ஜாதகம்"
+
+#: ndastro_api/core/i18n_messages.py:7
+msgid "Sun"
+msgstr "சூரியன்"
+
+#: ndastro_api/core/i18n_messages.py:8
+msgid "Moon"
+msgstr "சந்திரன்"
+
+#: ndastro_api/core/i18n_messages.py:9
+msgid "Mercury"
+msgstr "புதன்"
+
+#: ndastro_api/core/i18n_messages.py:10
+msgid "Venus"
+msgstr "சுக்ரன்"
+
+#: ndastro_api/core/i18n_messages.py:11
+msgid "Mars"
+msgstr "செவ்வாய்"
+
+#: ndastro_api/core/i18n_messages.py:12
+msgid "Jupiter"
+msgstr "குரு"
+
+#: ndastro_api/core/i18n_messages.py:13
+msgid "Saturn"
+msgstr "சனி"
+
+#: ndastro_api/core/i18n_messages.py:14 ndastro_api/services/chart_utils.py:180
+msgid "Rahu"
+msgstr "ராகு"
+
+#: ndastro_api/core/i18n_messages.py:15 ndastro_api/services/chart_utils.py:180
+msgid "Kethu"
+msgstr "கேது"
+
+#: ndastro_api/core/i18n_messages.py:16
+msgid "Ascendant"
+msgstr "லக்னம்"
+
+#: ndastro_api/core/i18n_messages.py:17
+msgid "SU"
+msgstr "சூ"
+
+#: ndastro_api/core/i18n_messages.py:18
+msgid "MO"
+msgstr "சந்"
+
+#: ndastro_api/core/i18n_messages.py:19
+msgid "ME"
+msgstr "பு"
+
+#: ndastro_api/core/i18n_messages.py:20
+msgid "VE"
+msgstr "சு"
+
+#: ndastro_api/core/i18n_messages.py:21
+msgid "MA"
+msgstr "செ"
+
+#: ndastro_api/core/i18n_messages.py:22
+msgid "JU"
+msgstr "குரு"
+
+#: ndastro_api/core/i18n_messages.py:23
+msgid "SA"
+msgstr "ச"
+
+#: ndastro_api/core/i18n_messages.py:24
+msgid "RA"
+msgstr "ரா"
+
+#: ndastro_api/core/i18n_messages.py:25
+msgid "KE"
+msgstr "கே"
+
+#: ndastro_api/core/i18n_messages.py:26
+msgid "AS"
+msgstr "ல"
+
+#: ndastro_api/core/i18n_messages.py:31
+msgid "Aries"
+msgstr "மேஷம்"
+
+#: ndastro_api/core/i18n_messages.py:32
+msgid "Taurus"
+msgstr "ரிஷபம்"
+
+#: ndastro_api/core/i18n_messages.py:33
+msgid "Gemini"
+msgstr "மிதுனம்"
+
+#: ndastro_api/core/i18n_messages.py:34
+msgid "Cancer"
+msgstr "கடகம்"
+
+#: ndastro_api/core/i18n_messages.py:35
+msgid "Leo"
+msgstr "சிம்மம்"
+
+#: ndastro_api/core/i18n_messages.py:36
+msgid "Virgo"
+msgstr "கன்னி"
+
+#: ndastro_api/core/i18n_messages.py:37
+msgid "Libra"
+msgstr "துலாம்"
+
+#: ndastro_api/core/i18n_messages.py:38
+msgid "Scorpio"
+msgstr "விருச்சிகம்"
+
+#: ndastro_api/core/i18n_messages.py:39
+msgid "Sagittarius"
+msgstr "தனுசு"
+
+#: ndastro_api/core/i18n_messages.py:40
+msgid "Capricorn"
+msgstr "மகரம்"
+
+#: ndastro_api/core/i18n_messages.py:41
+msgid "Aquarius"
+msgstr "கும்பம்"
+
+#: ndastro_api/core/i18n_messages.py:42
+msgid "Pisces"
+msgstr "மீனம்"
+
+#: ndastro_api/core/i18n_messages.py:48
+msgid "Planet"
+msgstr "கிரகம்"
+
+#: ndastro_api/core/i18n_messages.py:49
+msgid "Sign"
+msgstr "ராசி"
+
+#: ndastro_api/core/i18n_messages.py:50
+msgid "House"
+msgstr "பாவம்"
+
+#: ndastro_api/core/i18n_messages.py:51
+msgid "Degree"
+msgstr "பாகை"
+
+#: ndastro_api/core/i18n_messages.py:52
+#, python-brace-format
+msgid "Chart for {name}"
+msgstr "{name} இன் ஜாதகம்"
+
+#: ndastro_api/core/i18n_messages.py:53
+msgid "Birth Details"
+msgstr "பிறப்பு விவரங்கள்"
+
+#: ndastro_api/core/i18n_messages.py:54 ndastro_api/services/chart_utils.py:134
+msgid "Date"
+msgstr "தேதி"
+
+#: ndastro_api/core/i18n_messages.py:55 ndastro_api/services/chart_utils.py:135
+msgid "Time"
+msgstr "நேரம்"
+
+#: ndastro_api/core/i18n_messages.py:56 ndastro_api/services/chart_utils.py:136
+msgid "Place"
+msgstr "இடம்"
+
+#: ndastro_api/core/i18n_messages.py:57
+msgid "Latitude"
+msgstr "அட்சாங்சம்"
+
+#: ndastro_api/core/i18n_messages.py:58
+msgid "Longitude"
+msgstr "தீர்க்காங்சம்"
+
+#: ndastro_api/core/i18n_messages.py:59
+msgid "Timezone"
+msgstr "நேர மண்டலம்"
+

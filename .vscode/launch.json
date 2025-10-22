@@ -18,10 +18,12 @@
         "type": "debugpy",
         "request": "launch",
         "module": "uvicorn",
+        "justMyCode": false,
         "args": [
             "ndastro_api.main:app",
             "--reload",
             "--port=6001",
+            "--host=0.0.0.0"
           //  "--ssl-keyfile=scripts/server.key",
           //  "--ssl-certfile=scripts/server.crt"
         ],

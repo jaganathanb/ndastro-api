@@ -12,7 +12,7 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 LOG_FILE_PATH = LOG_DIR / "app.log"
 
-LOGGING_LEVEL = logging.INFO
+LOGGING_LEVEL = logging.ERROR
 LOGGING_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 logging.basicConfig(level=LOGGING_LEVEL, format=LOGGING_FORMAT)

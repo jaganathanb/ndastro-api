@@ -17,12 +17,11 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
-from pydantic_settings import BaseSettings
 
 from ndastro_api.api.deps import get_current_superuser
+from ndastro_api.core.babel_i18n import init_babel
 from ndastro_api.core.config import (
     AppSettings,
-    BaseSettings,
     ClientSideCacheSettings,
     DatabaseSettings,
     EnvironmentOption,
@@ -34,6 +33,8 @@ from ndastro_api.models.user import Base
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable
+
+    from pydantic_settings import BaseSettings
 
 
 async def create_tables() -> None:
@@ -154,6 +155,9 @@ def create_application(
 
     application = FastAPI(lifespan=lifespan, **kwargs)
     application.include_router(router)
+
+    # Initialize Babel for internationalization
+    init_babel(application)
 
     add_middlewares(settings, application)
     add_openapi_doc(settings, application)

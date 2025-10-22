@@ -4,6 +4,7 @@ This module provides functions to compute kattams using planetary positions, asc
 """
 
 from datetime import datetime
+from itertools import groupby
 from typing import TYPE_CHECKING, cast
 
 from skyfield.units import Angle
@@ -28,27 +29,21 @@ def get_kattams(lat: Angle, lon: Angle, given_time: datetime, ayanamsa: float) -
         lat (Angle): The latitude of the observer.
         lon (Angle): The longitude of the observer.
         given_time (datetime): The datetime of the observation.
-        ayanamsa (float): The ayanamsa value to use for sidereal calculations.
+        ayanamsa (float): The ayanamsa value to use for calculations.
 
     Returns:
         list[Kattam]: A list of kattams.
 
     """
-    # Compute ascendant and planet positions only once
     ascendant = get_sidereal_ascendant_position(given_time, lat, lon, ayanamsa)
     planets = get_sidereal_planet_positions(lat, lon, given_time, ayanamsa)
 
-    # Use a dict for fast lookup instead of groupby
-    rasis_planets: dict[Rasis, list] = {}
-    for planet in planets:
-        rasis_planets.setdefault(planet.rasi_occupied, []).append(planet)
+    rasis_planets = {k: list(g) for k, g in groupby(sorted(planets, key=lambda x: x.rasi_occupied), lambda x: x.rasi_occupied)}
 
     kattams: list[Kattam] = []
-    asc_rasi_idx = ascendant.rasi_occupied.value - 1
     rasi_list = list(range(1, TOTAL_RAASI + 1))
-    # Avoid slicing by using modulo arithmetic for normalized rasi order
-    for idx in range(TOTAL_RAASI):
-        rasi_num = rasi_list[(asc_rasi_idx + idx) % TOTAL_RAASI]
+    normalized_rasi_list = rasi_list[ascendant.rasi_occupied.value - 1 :] + rasi_list[: ascendant.rasi_occupied.value - 1]
+    for idx, rasi_num in enumerate(normalized_rasi_list):
         rasi = Rasis(rasi_num)
         rp = rasis_planets.get(rasi, [])
         kattam = Kattam(
@@ -61,5 +56,7 @@ def get_kattams(lat: Angle, lon: Angle, given_time: datetime, ayanamsa: float) -
             asc_longitude=ascendant.longitude if ascendant.rasi_occupied == rasi else None,
         )
         kattams.append(kattam)
+
+    kattams.sort(key=lambda x: x.order)
 
     return kattams

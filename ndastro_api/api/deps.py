@@ -12,6 +12,7 @@ from typing import Annotated, cast
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002 # Required to be imported NOT as type check because openapi needs it
 
+from ndastro_api.core.config import EnvironmentOption, settings
 from ndastro_api.core.db.database import async_get_db
 from ndastro_api.core.exceptions.http_exceptions import (
     ForbiddenException,
@@ -99,6 +100,58 @@ async def get_optional_user(request: Request, db: Annotated[AsyncSession, Depend
     except Exception:
         logger.exception("Unexpected error in get_optional_user")
         return None
+
+
+def get_conditional_dependencies() -> list:
+    """Get dependencies list that conditionally requires authentication based on environment.
+
+    Returns:
+        list: List containing authentication dependency only in production.
+
+    """
+    if settings.ENVIRONMENT == EnvironmentOption.PRODUCTION:
+        return [Depends(get_current_user)]
+    return []
+
+
+async def get_current_user_conditional(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+) -> UserRead | None:
+    """Conditionally get current user - only enforce authentication in production.
+
+    In production environment, requires valid authentication token.
+    In non-production environments (local, test, staging), returns None to allow access.
+
+    Args:
+        request (Request): The FastAPI request object to extract token from headers.
+        db (AsyncSession): The asynchronous database session dependency.
+
+    Returns:
+        UserRead | None: The authenticated user in production, None in other environments.
+
+    Raises:
+        UnauthorizedException: If authentication fails in production environment.
+
+    """
+    # Only enforce authentication in production
+    if settings.ENVIRONMENT == EnvironmentOption.PRODUCTION:
+        # Extract token from Authorization header
+        authorization = request.headers.get("Authorization")
+        if not authorization:
+            raise UnauthorizedException
+
+        scheme, _, token = authorization.partition(" ")
+        if scheme.lower() != "bearer" or not token:
+            raise UnauthorizedException
+
+        try:
+            return await get_current_user(token, db)
+        except (HTTPException, UnauthorizedException):
+            raise UnauthorizedException from None
+
+    # In non-production environments, allow access without authentication
+    return None
 
 
 async def get_current_superuser(current_user: Annotated[UserSchema, Depends(get_current_user)]) -> UserSchema:

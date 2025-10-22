@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, cast
 
 from skyfield.almanac import sunrise_sunset
 from skyfield.api import Loader
+from skyfield.framelib import ecliptic_frame
 from skyfield.searchlib import find_discrete
 from skyfield.toposlib import Topos
 from skyfield.units import Angle, Distance
@@ -61,10 +62,10 @@ def get_tropical_position_of(planet_code: str, lat: Angle, lon: Angle, given_tim
 
     """
     t = ts.utc(given_time)
-    observer: VectorSum = eph["earth"] + Topos(lat, lon)
+    observer: VectorSum = eph["earth"] + Topos(latitude_degrees=lat.degrees, longitude_degrees=lon.degrees)
     astrometric = cast("Barycentric", observer.at(t)).observe(eph[planet_code]).apparent()
 
-    return astrometric.ecliptic_latlon()
+    return astrometric.frame_latlon(ecliptic_frame)
 
 
 def get_tropical_planetary_positions(lat: Angle, lon: Angle, given_time: datetime) -> list[PlanetDetail]:
@@ -260,7 +261,7 @@ def get_sidereal_ascendant_position(given_time: datetime, lat: Angle, lon: Angle
 
     return PlanetDetail(
         "ascendant",
-        "Asc",
+        Planets.from_code("ascendant").name,
         Angle(degrees=0),
         ascr,
         nirayana_longitude=Angle(degrees=asc),
@@ -332,6 +333,6 @@ def get_sunrise_sunset(lat: Angle, lon: Angle, given_time: datetime) -> tuple[da
     f = sunrise_sunset(eph, location)
     times, events = find_discrete(t_start, t_end, f)
 
-    sunrise, sunset = cast("list[Time]", [time for time, _ in zip(times, events)])
+    sunrise, sunset = cast("list[Time]", [time for time, _ in zip(times, events, strict=False)])
 
     return cast("tuple[datetime, datetime]", (sunrise.utc_datetime(), sunset.utc_datetime()))

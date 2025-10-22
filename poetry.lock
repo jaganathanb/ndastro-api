@@ -156,6 +156,21 @@ gssauth = ["gssapi", "sspilib"]
 test = ["distro (>=1.9.0,<1.10.0)", "flake8 (>=6.1,<7.0)", "flake8-pyi (>=24.1.0,<24.2.0)", "gssapi", "k5test", "mypy (>=1.8.0,<1.9.0)", "sspilib", "uvloop (>=0.15.3)"]
 
 [[package]]
+name = "babel"
+version = "2.17.0"
+description = "Internationalization utilities"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "babel-2.17.0-py3-none-any.whl", hash = "sha256:4d0b53093fdfb4b21c92b5213dba5a1b23885afa8383709427046b21c366e5f2"},
+    {file = "babel-2.17.0.tar.gz", hash = "sha256:0c54cffb19f690cdcc52a3b50bcbf71e07a808d1c80d549f2459b9d2cf0afb9d"},
+]
+
+[package.extras]
+dev = ["backports.zoneinfo", "freezegun (>=1.0,<2.0)", "jinja2 (>=3.0)", "pytest (>=6.0)", "pytest-cov", "pytz", "setuptools", "tzdata"]
+
+[[package]]
 name = "bcrypt"
 version = "4.3.0"
 description = "Modern password hashing for your software and your servers"
@@ -618,6 +633,23 @@ uvicorn = {version = ">=0.12.0", extras = ["standard"], optional = true, markers
 [package.extras]
 all = ["email-validator (>=2.0.0)", "fastapi-cli[standard] (>=0.0.5)", "httpx (>=0.23.0)", "itsdangerous (>=1.1.0)", "jinja2 (>=3.1.5)", "orjson (>=3.2.1)", "pydantic-extra-types (>=2.0.0)", "pydantic-settings (>=2.0.0)", "python-multipart (>=0.0.18)", "pyyaml (>=5.3.1)", "ujson (>=4.0.1,!=4.0.2,!=4.1.0,!=4.2.0,!=4.3.0,!=5.0.0,!=5.1.0)", "uvicorn[standard] (>=0.12.0)"]
 standard = ["email-validator (>=2.0.0)", "fastapi-cli[standard] (>=0.0.5)", "httpx (>=0.23.0)", "jinja2 (>=3.1.5)", "python-multipart (>=0.0.18)", "uvicorn[standard] (>=0.12.0)"]
+
+[[package]]
+name = "fastapi-babel"
+version = "1.0.0"
+description = "FastAPI-babel is an extenstion for I18n and I10n support in FastAPI, based on babel and pytz."
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "fastapi_babel-1.0.0-py3-none-any.whl", hash = "sha256:9be639b098dd07dfe5b811df318abdd7e282622ac20304d909151f46b09a087d"},
+    {file = "fastapi_babel-1.0.0.tar.gz", hash = "sha256:a70005e132b6cfc611a5a02601c63bcd26a1b1cb689d7295be4587c9d35402f3"},
+]
+
+[package.dependencies]
+babel = "*"
+fastapi = "*"
+uvicorn = "*"
 
 [[package]]
 name = "fastapi-cli"
@@ -2688,4 +2720,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10.0,<=3.13.1"
-content-hash = "381cbb195167fc30e922957f0586c5b66e2b81d5eb5c3d7cefd07bf732bc88a0"
+content-hash = "20157a7319580261f191793c416edd7fa17e2114cfbab62f22bdf0bf8078bd16"

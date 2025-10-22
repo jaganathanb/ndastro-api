@@ -32,6 +32,8 @@ fastcrud = "^0.15.12"
 aiosqlite = "^0.21.0"
 python-jose = "^3.5.0"
 psutil = "^7.0.0"
+babel = "^2.17.0"
+fastapi-babel = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
