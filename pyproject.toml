@@ -7,6 +7,7 @@ readme = "README.md"
 packages = [
     { include = "ndastro_api" }
 ]
+include = ["ndastro_api/locales/**/*.mo", "ndastro_api/locales/**/*.po"]
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<=3.13.1"
