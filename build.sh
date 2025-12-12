@@ -5,7 +5,7 @@ set -o errexit
 
 echo "Installing dependencies..."
 pip install --upgrade pip
-poetry install --no-dev
+poetry install --only main
 
 echo "Compiling translations..."
 poetry run pybabel compile -d ndastro_api/locales

@@ -35,7 +35,7 @@ Added a build script that:
    ```
    OR if the above doesn't work:
    ```bash
-   poetry install --no-dev && poetry run pybabel compile -d ndastro_api/locales && poetry run alembic upgrade head
+   poetry install --only main && poetry run pybabel compile -d ndastro_api/locales && poetry run alembic upgrade head
    ```
 
 2. **Configure Start Command**:
