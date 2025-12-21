@@ -17,20 +17,55 @@ jobs:
       contents: read #This is required for actions/checkout
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python version
-        uses: actions/setup-python@v5
+      #----------------------------------------------
+      #       check-out repo and set-up python
+      #----------------------------------------------
+      - name: Check out repository
+        uses: actions/checkout@v5
+      - name: Set up python
+        id: setup-python
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
+      #----------------------------------------------
+      #  -----  install & configure poetry  -----
+      #----------------------------------------------
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          virtualenvs-path: .venv
+          installer-parallel: true
 
-      # 🛠️ Local Build Section (Optional)
-      # The following section in your workflow is designed to catch build issues early on the client side, before deployment. This can be helpful for debugging and validation. However, if this step significantly increases deployment time and early detection is not critical for your workflow, you may remove this section to streamline the deployment process.
-      - name: Create and Start virtual environment and Install dependencies
+      #----------------------------------------------
+      #       load cached venv if cache exists
+      #----------------------------------------------
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      #----------------------------------------------
+      # install dependencies if cache does not exist
+      #----------------------------------------------
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+      #----------------------------------------------
+      # install your root project, if required
+      #----------------------------------------------
+      - name: Install project
+        run: poetry install --no-interaction
+      #----------------------------------------------
+      #              run test suite
+      #----------------------------------------------
+      - name: Run tests
         run: |
-          python -m venv antenv
-          source antenv/bin/activate
-          pip install -r requirements.txt
+          source .venv/bin/activate
+          pytest tests/
+          coverage report
                 
       # By default, when you enable GitHub CI/CD integration through the Azure portal, the platform automatically sets the SCM_DO_BUILD_DURING_DEPLOYMENT application setting to true. This triggers the use of Oryx, a build engine that handles application compilation and dependency installation (e.g., pip install) directly on the platform during deployment. Hence, we exclude the antenv virtual environment directory from the deployment artifact to reduce the payload size. 
       - name: Upload artifact for deployment jobs
@@ -63,4 +98,5 @@ jobs:
         with:
           app-name: 'ndastro'
           slot-name: 'Production'
+
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_16BAE079FE614A60ABC35C7DC51D115B }}
