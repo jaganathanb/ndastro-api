@@ -58,6 +58,9 @@ jobs:
       #----------------------------------------------
       - name: Install project
         run: poetry install --no-interaction
+
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
                 
       # By default, when you enable GitHub CI/CD integration through the Azure portal, the platform automatically sets the SCM_DO_BUILD_DURING_DEPLOYMENT application setting to true. This triggers the use of Oryx, a build engine that handles application compilation and dependency installation (e.g., pip install) directly on the platform during deployment. Hence, we exclude the antenv virtual environment directory from the deployment artifact to reduce the payload size. 
       - name: Upload artifact for deployment jobs
@@ -65,8 +68,9 @@ jobs:
         with:
           name: python-app
           path: |
-            .
+            release.zip
             !antenv/
+            !venv/
 
       # 🚫 Opting Out of Oryx Build
       # If you prefer to disable the Oryx build process during deployment, follow these steps:
@@ -83,6 +87,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: python-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
       
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
@@ -92,6 +99,7 @@ jobs:
           slot-name: 'Production'
 
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_16BAE079FE614A60ABC35C7DC51D115B }}
+
 
 
 
