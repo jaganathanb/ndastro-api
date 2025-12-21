@@ -10,7 +10,7 @@ packages = [
 include = ["ndastro_api/locales/**/*.mo", "ndastro_api/locales/**/*.po"]
 
 [tool.poetry.dependencies]
-python = ">=3.10.0,<=3.13.1"
+python = ">=3.10.0,<3.14"
 fastapi = {extras = ["standard"], version = "^0.115.13"}
 alembic = "^1.16.2"
 sentry-sdk = {extras = ["fastapi"], version = "^2.30.0"}
