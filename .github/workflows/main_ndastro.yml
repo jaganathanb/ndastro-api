@@ -26,7 +26,7 @@ jobs:
         id: setup-python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.13.1'
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
@@ -92,4 +92,5 @@ jobs:
           slot-name: 'Production'
 
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_16BAE079FE614A60ABC35C7DC51D115B }}
+
 
