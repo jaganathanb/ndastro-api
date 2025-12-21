@@ -41,6 +41,42 @@ from ndastro_api.schemas.user import UserPasswordUpdate, UserRead
 router = APIRouter(tags=["Auth"], prefix="/auth")
 
 
+@router.post("/token", summary="OAuth2 compatible token login for Swagger UI")
+async def login_for_swagger(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+) -> dict[str, str]:
+    """Authenticate a user and generate an access token (OAuth2 compatible for Swagger).
+
+    This endpoint is designed for Swagger UI OAuth2 authentication and returns
+    only the access token in a simple format.
+
+    Args:
+        form_data (OAuth2PasswordRequestForm): The OAuth2 form data containing username/email and password.
+        db (AsyncSession): The asynchronous database session dependency.
+
+    Returns:
+        Token: A Token object containing the access token, expiry, and token type.
+
+    Raises:
+        NotFoundException: If authentication fails due to invalid credentials.
+
+    """
+    user = await authenticate_user(username_or_email=form_data.username, password=form_data.password, db=db)
+    if not user:
+        msg = "User not found or invalid credentials"
+        raise NotFoundException(msg)
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = await create_access_token(data={"sub": user["username"]}, expires_delta=access_token_expires)
+
+    return {
+        "access_token": access_token,
+        "expires_in": str(ACCESS_TOKEN_EXPIRE_MINUTES * 60),
+        "token_type": settings.TOKEN_TYPE,
+    }
+
+
 @router.post("/login", summary="Login to obtain access and refresh tokens.")
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
