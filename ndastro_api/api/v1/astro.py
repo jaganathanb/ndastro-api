@@ -152,8 +152,8 @@ class SiderealPositionsRequest(BaseModel):
 
 @router.get("/planets")
 def get_sidereal_positions(
-    lat: Annotated[float, Query(description="Latitude")] = 12.59,
-    lon: Annotated[float, Query(description="Longitude")] = 77.36,
+    lat: Annotated[float, Query(description="Latitude")] = 12.971667,
+    lon: Annotated[float, Query(description="Longitude")] = 77.593611,
     ayanamsa: Annotated[str, Query(description="Ayanamsa name i.e 'lahiri', 'chitrapaksha', etc.")] = "lahiri",
     dateandtime: Annotated[str, Query(description="Datetime in ISO format")] = datetime.now(tz=pytz.utc).isoformat(timespec="seconds"),
 ) -> list[PlanetDetailResponse]:
@@ -193,8 +193,8 @@ class AscendantRequest(BaseModel):
 
 @router.get("/ascendant", response_model=PlanetDetailResponse)
 def get_sidereal_ascendant(
-    lat: Annotated[float, Query(description="Latitude")] = 12.59,
-    lon: Annotated[float, Query(description="Longitude")] = 77.36,
+    lat: Annotated[float, Query(description="Latitude")] = 12.971667,
+    lon: Annotated[float, Query(description="Longitude")] = 77.593611,
     ayanamsa: Annotated[str, Query(description="Ayanamsa name i.e 'lahiri', 'chitrapaksha', etc.")] = "lahiri",
     dateandtime: Annotated[str, Query(description="Datetime in ISO format")] = datetime.now(tz=pytz.utc).isoformat(timespec="seconds"),
 ) -> PlanetDetailResponse:
@@ -237,8 +237,8 @@ class SunriseSunsetResponse(BaseModel):
 
 @router.get("/sunrise-sunset", response_model=SunriseSunsetResponse)
 def get_sun_rise_set(
-    lat: Annotated[float, Query(description="Latitude")] = 12.59,
-    lon: Annotated[float, Query(description="Longitude")] = 77.36,
+    lat: Annotated[float, Query(description="Latitude")] = 12.971667,
+    lon: Annotated[float, Query(description="Longitude")] = 77.593611,
     dateandtime: Annotated[str, Query(description="Datetime in ISO format")] = datetime.now(tz=pytz.utc).isoformat(timespec="seconds"),
 ) -> SunriseSunsetResponse:
     """Calculate the sunrise and sunset times for a given location and date."""
@@ -272,8 +272,8 @@ class KattamResponse(BaseModel):
 
 @router.get("/kattams", response_model=list[KattamResponse])
 def get_astro_kattams(
-    lat: Annotated[float, Query(description="Latitude")] = 12.59,
-    lon: Annotated[float, Query(description="Longitude")] = 77.36,
+    lat: Annotated[float, Query(description="Latitude")] = 12.971667,
+    lon: Annotated[float, Query(description="Longitude")] = 77.593611,
     ayanamsa: Annotated[str, Query(description="Ayanamsa name i.e 'lahiri', 'chitrapaksha', etc.")] = "lahiri",
     dateandtime: Annotated[str, Query(description="Datetime in ISO format")] = datetime.now(tz=pytz.utc).isoformat(timespec="seconds"),
 ) -> list[KattamResponse]:
@@ -288,8 +288,8 @@ def get_astro_kattams(
 @router.get("/chart")
 def get_astrology_chart_svg(  # noqa: PLR0913
     request: Request,
-    lat: Annotated[float, Query(description="Latitude")] = 12.59,
-    lon: Annotated[float, Query(description="Longitude")] = 77.36,
+    lat: Annotated[float, Query(description="Latitude")] = 12.971667,
+    lon: Annotated[float, Query(description="Longitude")] = 77.593611,
     ayanamsa: Annotated[str, Query(description="Ayanamsa name i.e 'lahiri', 'chitrapaksha', etc.")] = "lahiri",
     dateandtime: Annotated[str, Query(description="Datetime in ISO format")] = datetime.now(tz=pytz.utc).isoformat(timespec="seconds"),
     chart_type: Annotated[ChartType, Query(description="Type of astrology chart")] = ChartType.SOUTH_INDIAN,

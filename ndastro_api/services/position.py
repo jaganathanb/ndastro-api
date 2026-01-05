@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import pathlib
 from datetime import datetime, timedelta
-from math import atan2, ceil, cos, degrees, floor, radians, sin, tan
+from math import atan2, ceil, degrees, floor, radians, tan
 from typing import TYPE_CHECKING, cast
 
-from skyfield.almanac import sunrise_sunset
+from skyfield.almanac import cos, sin, sunrise_sunset
 from skyfield.api import Loader
 from skyfield.framelib import ecliptic_frame
+from skyfield.nutationlib import mean_obliquity
 from skyfield.searchlib import find_discrete
 from skyfield.toposlib import Topos
 from skyfield.units import Angle, Distance
@@ -37,7 +38,6 @@ if TYPE_CHECKING:
 
 from skyfield.data.spice import inertial_frames
 from skyfield.elementslib import osculating_elements_of
-from skyfield.nutationlib import mean_obliquity
 
 from ndastro_api.core.enums.house_enum import Houses
 from ndastro_api.core.enums.rasi_enum import Rasis
@@ -62,7 +62,7 @@ def get_tropical_position_of(planet_code: str, lat: Angle, lon: Angle, given_tim
 
     """
     t = ts.utc(given_time)
-    observer: VectorSum = eph["earth"] + Topos(latitude_degrees=lat.degrees, longitude_degrees=lon.degrees)
+    observer: VectorSum = eph["earth"] + Topos(latitude_degrees=lat.degrees, longitude_degrees=lon.degrees, elevation_m=914)
     astrometric = cast("Barycentric", observer.at(t)).observe(eph[planet_code]).apparent()
 
     return astrometric.frame_latlon(ecliptic_frame)
@@ -227,6 +227,7 @@ def get_tropical_ascendant_logitude(given_time: datetime, lat: Angle, lon: Angle
 
     lstr = radians(lst * 15)
 
+    # source: https://astronomy.stackexchange.com/a/55891 by pm-2ring
     ascr = atan2(cos(lstr), -(sin(lstr) * cos(oer) + tan(radians(cast("float", lat.degrees))) * sin(oer)))
 
     asc = degrees(ascr)
